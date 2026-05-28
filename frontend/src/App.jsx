@@ -8,6 +8,7 @@ function App() {
   });
 
   const [habitName, setHabitName] = useState("");
+
   const [xp, setXp] = useState(() => {
     return Number(localStorage.getItem("xp")) || 0;
   });
@@ -17,12 +18,23 @@ function App() {
     localStorage.setItem("xp", xp);
   }, [habits, xp]);
 
+  const level = Math.floor(xp / 50) + 1;
+  const xpProgress = xp % 50;
+  const xpToNextLevel = 50 - xpProgress;
+
+  const getCharacter = () => {
+    if (level >= 7) return "🌳";
+    if (level >= 5) return "🌿";
+    if (level >= 3) return "🌱";
+    return "🌰";
+  };
+
   const addHabit = () => {
     if (habitName.trim() === "") return;
 
     const newHabit = {
       id: Date.now(),
-      name: habitName,
+      name: habitName.trim(),
       completed: false,
       streak: 0,
     };
@@ -32,6 +44,10 @@ function App() {
   };
 
   const completeHabit = (id) => {
+    const habit = habits.find((habit) => habit.id === id);
+
+    if (!habit || habit.completed) return;
+
     setHabits(
       habits.map((habit) =>
         habit.id === id
@@ -60,43 +76,72 @@ function App() {
     setHabits(habits.filter((habit) => habit.id !== id));
   };
 
-  const level = Math.floor(xp / 50) + 1;
-
   return (
-    <div className="app">
+    <main className="app">
       <section className="hero">
         <h1>Heabit</h1>
-        <p>Turn invisible progress into visible growth.</p>
+        <p>Small actions. Visible growth.</p>
       </section>
 
-      <section className="character-card">
-        <h2>Your Growth Character</h2>
-        <div className="character">🌱</div>
-        <p>Level {level}</p>
-        <p>{xp} XP</p>
+      <section className="card growth-card">
+        <p className="section-label">Your Growth</p>
+
+        <div className="character">{getCharacter()}</div>
+
+        <h2>Level {level}</h2>
+        <p className="muted-text">{xp} XP earned</p>
+
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${(xpProgress / 50) * 100}%` }}
+          ></div>
+        </div>
+
+        <p className="small-text">{xpToNextLevel} XP until next growth</p>
       </section>
 
-      <section className="habit-form">
+      <section className="card habit-form">
         <input
           type="text"
-          placeholder="Enter a habit, e.g. Drink water"
+          placeholder="Add one small habit..."
           value={habitName}
           onChange={(event) => setHabitName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") addHabit();
+          }}
         />
+
         <button onClick={addHabit}>Add Habit</button>
       </section>
 
-      <section className="habit-list">
-        <h2>Today&apos;s Habits</h2>
+      <section className="card habit-list">
+        <div className="section-header">
+          <div>
+            <p className="section-label">Today</p>
+            <h2>Daily Habits</h2>
+          </div>
+
+          {habits.length > 0 && (
+            <button className="secondary-btn" onClick={resetDay}>
+              New Day
+            </button>
+          )}
+        </div>
 
         {habits.length === 0 ? (
-          <p className="empty-text">No habits yet. Add your first habit.</p>
+          <p className="empty-text">
+            No habits yet. Start with one action you can complete today.
+          </p>
         ) : (
           habits.map((habit) => (
-            <div className="habit-card" key={habit.id}>
+            <div
+              className={`habit-card ${habit.completed ? "completed" : ""}`}
+              key={habit.id}
+            >
               <div>
                 <h3>{habit.name}</h3>
-                <p>🔥 Streak: {habit.streak}</p>
+                <p>🔥 {habit.streak}-day streak</p>
               </div>
 
               <div className="habit-actions">
@@ -104,24 +149,21 @@ function App() {
                   onClick={() => completeHabit(habit.id)}
                   disabled={habit.completed}
                 >
-                  {habit.completed ? "Completed" : "Complete"}
+                  {habit.completed ? "Done" : "+10 XP"}
                 </button>
 
-                <button className="delete-btn" onClick={() => deleteHabit(habit.id)}>
+                <button
+                  className="delete-btn"
+                  onClick={() => deleteHabit(habit.id)}
+                >
                   Delete
                 </button>
               </div>
             </div>
           ))
         )}
-
-        {habits.length > 0 && (
-          <button className="reset-btn" onClick={resetDay}>
-            Start New Day
-          </button>
-        )}
       </section>
-    </div>
+    </main>
   );
 }
 
